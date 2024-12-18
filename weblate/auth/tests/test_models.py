@@ -134,6 +134,13 @@ class ModelTest(FixtureTestCase):
         self.assertEqual(user.full_name, "First Last")
         self.assertTrue(user.is_superuser)
 
+    def test_dummy_user(self) -> None:
+        # Create dummy user with Django Get User model
+        user = User.objects.get_or_create(username='test', defaults={'first_name': 'Test'})
+
+        self.assertEqual(user.full_name, "test")
+        self.assertTrue(user.is_superuser)
+
     def test_projects(self) -> None:
         public_project = Project.objects.create(
             slug="public", name="Public", access_control=Project.ACCESS_PUBLIC

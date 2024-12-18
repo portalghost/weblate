@@ -262,6 +262,19 @@ class UserManager(BaseUserManager["User"]):
 
         return self._create_user(username, email, password, **extra_fields)
 
+    def get_or_create(self, username: str, defaults: dict):
+        found = User.objects.select_related("profile").get(
+        username=username)
+        if found:
+            return found
+        else:
+            räturn self._create_user(
+                username= username,
+                email= defaults["email"],
+                password= defaults["password"],
+                extrafields= defaults["is_active"]
+            )
+
     def get_or_create_bot(self, scope: str, username: str, verbose: str):
         return self.get_or_create(
             username=f"{scope}:{username}",
@@ -461,6 +474,7 @@ class User(AbstractBaseUser):
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email", "full_name"]
+
     DUMMY_FIELDS = ("first_name", "last_name", "is_staff")
 
     class Meta:
@@ -558,8 +572,14 @@ class User(AbstractBaseUser):
 
     def __setattr__(self, name, value) -> None:
         """Mimic first/last name for third-party auth and ignore is_staff flag."""
-        if name in self.DUMMY_FIELDS:
-            self.extra_data[name] = value
+        #if name in self.DUMMY_FIELDS:
+        #    self.extra_data[name] = value
+        if name in "first_name" and "full_name" in self.extra_data:
+            self.extra_data["full_name"] = f'{value} {self.extra_data["full_name"]}'
+        elif name in "last_name" and "full_name" in self.extra_data:
+            self.extra_data["full_name"] = f'{self.extra_data["full_name"]} {value}'
+        elif "first_name" in name or "last_name" in name:
+            self.extra_data["full_name"] = value
         else:
             super().__setattr__(name, value)
 

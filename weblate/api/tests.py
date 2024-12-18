@@ -2753,6 +2753,46 @@ class MemoryAPITest(APIBaseTest):
         )
 
 
+class UnitTranslationsAPITests(APITestCase):
+    def setUp(self):
+        # Setup data needed for the tests
+        self.unit = UnitFactory.create()  # Create a test Unit
+        self.translation1 = TranslationFactory.create(unit=self.unit)  # Create a translation for the unit
+        self.translation2 = TranslationFactory.create(unit=self.unit)  # Create another translation for the unit
+        self.url = reverse("api:unit-translations",
+                           kwargs={"pk": self.unit.id})  # Construct the URL for the translations API
+
+    def test_get_translations(self):
+        """Test getting translations for a specific unit."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the response contains the expected translations
+        response_json = response.json()
+        self.assertEqual(len(response_json), 2)  # Should return 2 translations
+        self.assertEqual(response_json[0]["unit"], self.unit.id)
+        self.assertEqual(response_json[1]["unit"], self.unit.id)
+
+    def test_get_translations_no_data(self):
+        """Test getting translations for a unit that has no translations."""
+        unit_without_translations = UnitFactory.create()
+        url_no_translations = reverse("api:unit-translations", kwargs={"pk": unit_without_translations.id})
+
+        response = self.client.get(url_no_translations)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # The response should be an empty list if no translations exist
+        response_json = response.json()
+        self.assertEqual(response_json, [])
+
+    def test_get_translations_invalid_unit(self):
+        """Test requesting translations for a non-existing unit (404)."""
+        invalid_url = reverse("api:unit-translations", kwargs={"pk": 99999})  # Using an invalid unit ID
+
+        response = self.client.get(invalid_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
 class TranslationAPITest(APIBaseTest):
     def test_list_translations(self) -> None:
         response = self.client.get(reverse("api:translation-list"))

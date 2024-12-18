@@ -1577,6 +1577,7 @@ class TranslationViewSet(MultipleFieldViewSet, DestroyModelMixin):
         return Response(status=HTTP_204_NO_CONTENT)
 
 
+
 class LanguageViewSet(viewsets.ModelViewSet):
     """Languages API."""
 
@@ -1735,6 +1736,27 @@ class UnitViewSet(viewsets.ReadOnlyModelViewSet, UpdateModelMixin, DestroyModelM
                 status=HTTP_500_INTERNAL_SERVER_ERROR,
             )
         return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["get"], url_path="translations")
+    def translations(self, request, pk=None):
+        """
+        Retrieve translations related to the given unit ID.
+        """
+        try:
+            # Get the unit by primary key (ID)
+            unit = self.get_queryset().get(pk=pk)
+        except Unit.DoesNotExist:
+            raise NotFound(f"Unit with ID {pk} not found.")
+
+        # Fetch translations related to this unit
+        translations = Translation.objects.filter(units=unit).prefetch_related(
+            "language", "component"
+        )
+
+        # Serialize the translations
+        serializer = TranslationSerializer(translations, many=True, context={"request": request})
+
+        return Response(serializer.data, status=HTTP_200_OK)
 
 
 class ScreenshotViewSet(DownloadViewSet, viewsets.ModelViewSet):
